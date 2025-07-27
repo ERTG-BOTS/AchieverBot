@@ -7,7 +7,7 @@ services:
     working_dir: "/usr/src/app/achiever-bot"
     volumes:
       - .:/usr/src/app/achiever-bot
-    command: uv run bot
+    command: uv run bot.py
     restart: always
     env_file:
       - ".env"

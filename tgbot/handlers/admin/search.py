@@ -28,7 +28,7 @@ class SearchState(StatesGroup):
 
 @search_router.callback_query(AdminMenu.filter(F.menu == "search"))
 async def admin_search(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text(f"""<b>🔎 Поиск сотрудника</b>
+    await callback.message.edit_text("""<b>🔎 Поиск сотрудника</b>
 
 Введи полные или частичные фио специалиста для поиска""")
     await state.set_state(SearchState.fio)
@@ -40,9 +40,9 @@ async def search_message(message: Message, state: FSMContext, stp_db):
     await state.clear()
 
     # Регулярные выражения для определения полноты ввода
-    regex_fullname = r"^([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)$" #
+    regex_fullname = r"^([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)$"  #
     regex_name_surname_patronymic = r"^([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)$"
-    regex_name_surname = r"^([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)$" # Имя + Фамилия
+    regex_name_surname = r"^([а-яА-ЯёЁ]+)\s([а-яА-ЯёЁ]+)$"  # Имя + Фамилия
 
     async with stp_db() as session:
         repo = RequestsRepo(session)
@@ -94,7 +94,9 @@ async def search_message(message: Message, state: FSMContext, stp_db):
                     response += f"{i}. {user.FIO}\n"
                 await message.answer(response)
         else:
-            await message.answer("Пользователи не найдены. Попробуйте ввести полное ФИО")
+            await message.answer(
+                "Пользователи не найдены. Попробуйте ввести полное ФИО"
+            )
 
     else:
         # Некорректный формат ввода

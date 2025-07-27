@@ -1,16 +1,16 @@
 import logging
 
-from aiogram import Router, F
-from aiogram.filters import CommandStart, Command
+from aiogram import F, Router
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery, Message
 
 from infrastructure.database.models import User
 from infrastructure.database.repo.requests import RequestsRepo
 from tgbot.config import load_config
 from tgbot.filters.admin import AdminFilter
 from tgbot.handlers.user.main import main_cb
-from tgbot.keyboards.admin.main import ChangeRole, AdminMenu, admin_kb
+from tgbot.keyboards.admin.main import AdminMenu, ChangeRole, admin_kb
 from tgbot.keyboards.user.main import user_kb
 from tgbot.misc.roles import role_names
 from tgbot.services.logger import setup_logging
@@ -25,11 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 @admin_router.message(CommandStart())
-async def admin_start(message: Message, stp_db, state: FSMContext):
-    async with stp_db() as session:
-        repo = RequestsRepo(session)
-        user: User = await repo.users.get_user(user_id=message.from_user.id)
-
+async def admin_start(message: Message, user: User, state: FSMContext):
     state_data = await state.get_data()
 
     if "role" in state_data:
@@ -67,13 +63,9 @@ async def admin_start(message: Message, stp_db, state: FSMContext):
 
 @admin_router.callback_query(ChangeRole.filter())
 async def change_role(
-    callback: CallbackQuery, callback_data: ChangeRole, state: FSMContext, stp_db
+    callback: CallbackQuery, callback_data: ChangeRole, state: FSMContext, user: User
 ) -> None:
-    await callback.answer("")
-
-    async with stp_db() as session:
-        repo = RequestsRepo(session)
-        user: User = await repo.users.get_user(user_id=callback.from_user.id)
+    await callback.answer()
 
     match callback_data.role:
         case "mip":
@@ -97,7 +89,7 @@ async def change_role(
                 f"[Админ] {callback.from_user.username} ({callback.from_user.id}): Роль изменена с {user.Role} на 1"
             )
 
-    await main_cb(callback, stp_db, state)
+    await main_cb(callback, user, state)
 
 
 @admin_router.callback_query(AdminMenu.filter(F.menu == "reset"))

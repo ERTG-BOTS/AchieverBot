@@ -22,7 +22,6 @@ class TgBot:
 
     token: str
     use_redis: bool
-    division: str
 
     @staticmethod
     def from_env(env: Env):
@@ -35,11 +34,8 @@ class TgBot:
         # admin_ids = env.list("ADMINS", subcast=int)
 
         use_redis = env.bool("USE_REDIS")
-        division = env.str("DIVISION")
 
-        if division != "NTP" and division != "NCK":
-            raise ValueError("[CONFIG] DIVISION must be NTP or NCK")
-        return TgBot(token=token, use_redis=use_redis, division=division)
+        return TgBot(token=token, use_redis=use_redis)
 
 
 @dataclass

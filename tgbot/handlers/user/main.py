@@ -1,12 +1,12 @@
-from aiogram import Router, F
+from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery, Message
 
 from infrastructure.database.models import User
 from infrastructure.database.repo.requests import RequestsRepo
 from tgbot.config import load_config
-from tgbot.keyboards.user.main import user_kb, MainMenu, back_kb
+from tgbot.keyboards.user.main import MainMenu, back_kb, user_kb
 
 user_router = Router()
 
@@ -14,11 +14,7 @@ config = load_config(".env")
 
 
 @user_router.message(CommandStart())
-async def main_cmd(message: Message, state: FSMContext, stp_db):
-    async with stp_db() as session:
-        repo = RequestsRepo(session)
-        user: User = await repo.users.get_user(user_id=message.from_user.id)
-
+async def main_cmd(message: Message, state: FSMContext, user: User):
     state_data = await state.get_data()
 
     if user:
@@ -49,11 +45,7 @@ async def main_cmd(message: Message, state: FSMContext, stp_db):
 
 
 @user_router.callback_query(MainMenu.filter(F.menu == "main"))
-async def main_cb(callback: CallbackQuery, stp_db, state: FSMContext):
-    async with stp_db() as session:
-        repo = RequestsRepo(session)
-        user: User = await repo.users.get_user(user_id=callback.from_user.id)
-
+async def main_cb(callback: CallbackQuery, user: User, state: FSMContext):
     state_data = await state.get_data()
 
     await callback.message.edit_text(
@@ -71,11 +63,13 @@ async def main_cb(callback: CallbackQuery, stp_db, state: FSMContext):
 
 
 @user_router.callback_query(MainMenu.filter(F.menu == "level"))
-async def user_level(callback: CallbackQuery, achiever_db):
-    async with achiever_db() as session:
-        repo = RequestsRepo(session)
-        total_points = await repo.accruals.accruals_sum(user_id=callback.from_user.id)
-        wasted_points = await repo.executes.executes_sum(user_id=callback.from_user.id)
+async def user_level(callback: CallbackQuery, achiever_db: RequestsRepo):
+    total_points = await achiever_db.accruals.accruals_sum(
+        user_id=callback.from_user.id
+    )
+    wasted_points = await achiever_db.executes.executes_sum(
+        user_id=callback.from_user.id
+    )
 
     current_points_amount = total_points - wasted_points
 
@@ -93,7 +87,7 @@ async def user_level(callback: CallbackQuery, achiever_db):
 
 
 @user_router.callback_query(MainMenu.filter(F.menu == "faq"))
-async def user_level(callback: CallbackQuery):
+async def user_faq(callback: CallbackQuery):
     await callback.message.edit_text(
         """<b>❓️ FAQ</b>
 

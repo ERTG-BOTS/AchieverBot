@@ -36,7 +36,7 @@ def include_object(object, name, type_, reflected, compare_to):
     """
     if type_ == "table":
         # Only include tables that belong to this database
-        return name in ["questions", "messages_pairs"]
+        return name in ["accruals", "awards", "executes"]
 
     # Include all other objects (indexes, constraints, etc.) for included tables
     return True

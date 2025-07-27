@@ -46,35 +46,42 @@ class DatabaseMiddleware(BaseMiddleware):
                             user_id=event.from_user.id
                         )
 
+                        # Add data to the context
                         data["main_session"] = main_session
                         data["main_repo"] = main_repo
                         data["achiever_session"] = achiever_session
                         data["achiever_repo"] = achiever_repo
                         data["user"] = user
 
+                        return await handler(event, data)
+
             except (OperationalError, DBAPIError, DisconnectionError) as e:
-                # Retry logic...
-                if "Connection is busy" in str(e) or "HY000" in str(e):
-                    retry_count += 1
-                    logger.warning(
-                        f"[Middleware] Database connection error, повтор {retry_count}/{max_retries}: {e}"
+                retry_count += 1
+                logger.warning(
+                    f"[Middleware] Database connection error, повтор {retry_count}/{max_retries}: {e}"
+                )
+
+                if retry_count >= max_retries:
+                    logger.error(
+                        f"[Middleware] Все попытки подключения к БД исчерпаны: {e}"
                     )
-                    if retry_count >= max_retries:
-                        logger.error(
-                            f"[Middleware] Все попытки подключения к БД исчерпаны: {e}"
-                        )
-                        if isinstance(event, Message):
-                            try:
-                                await event.reply(
-                                    "⚠️ Временные проблемы с базой данных. Попробуйте позже."
-                                )
-                            except:
-                                pass
-                        return None
-                else:
-                    logger.error(f"[Middleware] Критическая ошибка БД: {e}")
+                    if hasattr(
+                        event, "reply"
+                    ):  # Check if it's a message that can be replied to
+                        try:
+                            await event.reply(
+                                "⚠️ Временные проблемы с базой данных. Попробуйте позже."
+                            )
+                        except:
+                            pass
                     return None
+
+                # Continue the retry loop
+                continue
+
             except Exception as e:
                 logger.error(f"[Middleware] Неожиданная ошибка: {e}")
                 return None
+
+        # This should not be reached, but just in case
         return None
